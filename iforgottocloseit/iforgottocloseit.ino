@@ -3,6 +3,8 @@
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
 #include <Base64.h>           // https://github.com/adamvr/arduino-base64
 
+char twilioCreds[] = "sid:token";
+
 double openForTooLongInMins = 0.1;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
@@ -81,7 +83,6 @@ void sendSms(String message) {
   const char* twilioApiHost = "api.twilio.com";
   const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
 
-  char twilioCreds[] = "ACbeb21044b7f420061aaf958051deed85:03b2a4f245a39bb27a827b96587a0f85";
   int inputLen = sizeof(twilioCreds);
   int encodedLen = base64_enc_len(inputLen);
   char encodedCreds[encodedLen]; 
@@ -105,7 +106,7 @@ void sendSms(String message) {
     "Content-Type: application/x-www-form-urlencoded\r\n" +
     "Connection: close\r\n\r\n" +
     //escapeParameter("To=+61422601983&From=+12015524973&Body=" + message) + "\r\n";
-    "To=%2B61422601983&From=%2B12015524973&Body=yo%0Anew%20line2\r\n";
+    "To=%2B61422601983&From=%2B12015524973&Body=oh%20yeh!%20from%20esp.\r\n";
   httpsClient.print(request);
   Serial.println("request sent:");
   Serial.println(request);
