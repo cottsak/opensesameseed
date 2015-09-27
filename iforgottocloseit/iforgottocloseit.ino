@@ -3,6 +3,7 @@
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
 #include <Base64.h>           // https://github.com/adamvr/arduino-base64
 
+String twilioSid = "sid";
 char twilioCreds[] = "sid:token";
 
 double openForTooLongInMins = 0.1;
@@ -99,7 +100,7 @@ void sendSms(String message) {
     return;
   }
   
-  String request = String("POST ") + "/2010-04-01/Accounts/ACbeb21044b7f420061aaf958051deed85/Messages.json" + " HTTP/1.1\r\n" +
+  String request = String("POST ") + "/2010-04-01/Accounts/" + twilioSid + "/Messages.json" + " HTTP/1.1\r\n" +
     "Host: " + twilioApiHost + "\r\n" +
     "User-Agent: ESP8266\r\n" +
     "Authorization: Basic " + encodedCreds + " \r\n" +
