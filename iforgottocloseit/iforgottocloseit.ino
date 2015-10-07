@@ -3,8 +3,7 @@
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
 #include <Base64.h>           // https://github.com/adamvr/arduino-base64
 
-String twilioSid = "sid";
-char twilioCreds[] = "sid:token";
+#include "keys.h"
 
 double openForTooLongInMins = 0.1;
 int doorOpenedAtTimeInMills = 0;
@@ -22,6 +21,7 @@ void setup() {
   Serial.begin(115200);   // for debugging
 
   Serial.print("Connecting to wifi");
+  WiFi.begin(wifiCreds[0], wifiCreds[1]);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -84,12 +84,11 @@ void sendSms(String message) {
   const char* twilioApiHost = "api.twilio.com";
   const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
 
+  // base64 encode the creds for the http auth header
   int inputLen = sizeof(twilioCreds);
   int encodedLen = base64_enc_len(inputLen);
   char encodedCreds[encodedLen]; 
-  // note input is consumed in this step: it will be empty afterwards
   base64_encode(encodedCreds, twilioCreds, inputLen); 
-  
   
   if (!httpsClient.connect(twilioApiHost, 443)) {
     Serial.println("connection failed.");
@@ -99,15 +98,16 @@ void sendSms(String message) {
     Serial.println("certificate doesn't match. will not send message.");
     return;
   }
-  
+
+  String postData = urlEncode("To=" + smsToNumber + "&From=" + smsFromNumber + "&Body=" + message);
   String request = String("POST ") + "/2010-04-01/Accounts/" + twilioSid + "/Messages.json" + " HTTP/1.1\r\n" +
     "Host: " + twilioApiHost + "\r\n" +
     "User-Agent: ESP8266\r\n" +
     "Authorization: Basic " + encodedCreds + " \r\n" +
     "Content-Type: application/x-www-form-urlencoded\r\n" +
+    "Content-Length: " + postData.length() + "\r\n" +
     "Connection: close\r\n\r\n" +
-    //escapeParameter("To=+61422601983&From=+12015524973&Body=" + message) + "\r\n";
-    "To=%2B61422601983&From=%2B12015524973&Body=oh%20yeh!%20from%20esp.\r\n";
+    postData;
   httpsClient.print(request);
   Serial.println("request sent:");
   Serial.println(request);
@@ -120,27 +120,10 @@ void sendSms(String message) {
   Serial.println("closing connection");  
 }
 
-String escapeParameter(String param) {
-  param.replace("+"," ");
-  param.replace("%21","!");
-  param.replace("%23","#");
-  param.replace("%24","$");
-  param.replace("%26","&");
-  param.replace("%27","'");
-  param.replace("%28","(");
-  param.replace("%29",")");
-  param.replace("%2A","*");
-  param.replace("%2B","+");
-  param.replace("%2C",",");
-  param.replace("%2F","/");
-  param.replace("%3A",":");
-  param.replace("%3B",";");
-  param.replace("%3D","=");
-  param.replace("%3F","?");
-  param.replace("%40","@");
-  param.replace("%5B","[");
-  param.replace("%5D","]");
-  
-  return param;
+String urlEncode(String input){
+  input.replace("+","%2B");
+  input.replace(" ","%20");
+  return input;
 }
+
 
