@@ -3,9 +3,7 @@
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
 #include <Base64.h>           // https://github.com/adamvr/arduino-base64
 
-// todo: find out how to store creds in source properly
-String twilioSid = "ACbeb21044b7f420061aaf958051deed85";
-char twilioCreds[] = "ACbeb21044b7f420061aaf958051deed85:49e4562c470036d96d624c4e89a7978c";
+#include "keys.h"
 
 double openForTooLongInMins = 0.1;
 int doorOpenedAtTimeInMills = 0;
@@ -23,7 +21,7 @@ void setup() {
   Serial.begin(115200);   // for debugging
 
   Serial.print("Connecting to wifi");
-  WiFi.begin("itsatrap", "empireyouthstrikesfront");
+  WiFi.begin(wifiCreds[0], wifiCreds[1]);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -101,7 +99,7 @@ void sendSms(String message) {
     return;
   }
 
-  String postData = urlEncode("To=+61422601983&From=+12015524973&Body=" + message);
+  String postData = urlEncode("To=" + smsToNumber + "&From=" + smsFromNumber + "&Body=" + message);
   String request = String("POST ") + "/2010-04-01/Accounts/" + twilioSid + "/Messages.json" + " HTTP/1.1\r\n" +
     "Host: " + twilioApiHost + "\r\n" +
     "User-Agent: ESP8266\r\n" +
