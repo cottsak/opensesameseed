@@ -15,7 +15,7 @@ const int doorClosed = LOW;
 const int inputPinForDoor = 2;
 
 SimpleTimer timer;
-WiFiClientSecure httpsClient; // putting here coz crash when it's inside a method scope
+
 
 void setup() {
   Serial.begin(115200);   // for debugging
@@ -81,6 +81,7 @@ void resetDoorOpenCounter() {
 void sendSms(String message) {
   Serial.println("making POST request to Twilio for sending sms..");
 
+  WiFiClientSecure httpsClient;
   const char* twilioApiHost = "api.twilio.com";
   const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
 
