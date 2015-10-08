@@ -5,7 +5,7 @@
 
 #include "keys.h"
 
-double openForTooLongInMins = 0.1;
+double openForTooLongInMins = 10;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
 bool messageSentInThisOpening = false;
@@ -15,7 +15,6 @@ const int doorClosed = LOW;
 const int inputPinForDoor = 2;
 
 SimpleTimer timer;
-
 
 void setup() {
   Serial.begin(115200);   // for debugging
