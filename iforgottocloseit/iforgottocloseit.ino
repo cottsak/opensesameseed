@@ -3,7 +3,7 @@
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
 #include <Base64.h>           // https://github.com/adamvr/arduino-base64
 
-#include "keys.h"
+#include "keys.h"             // this file contains your usernames and passwords, etc
 
 double openForTooLongInMins = 10;
 int doorOpenedAtTimeInMills = 0;
