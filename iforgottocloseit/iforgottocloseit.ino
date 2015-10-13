@@ -67,6 +67,7 @@ void checkOpen() {
     doorOpenDurationInSeconds > openForTooLongInMins * 60 ) {
     String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
     sendSms(messageToSend);
+    // todo: this does not know if it sent successfully. needs work
     Serial.println("Sent SMS: " + messageToSend);
     messageSentInThisOpening = true;
   }
