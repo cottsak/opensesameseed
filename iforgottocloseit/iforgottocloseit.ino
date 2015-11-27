@@ -1,11 +1,11 @@
-#include <SimpleTimer.h>      // https://github.com/infomaniac50/SimpleTimer
-#include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
-#include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
-#include <Base64.h>           // https://github.com/adamvr/arduino-base64
+#include "SimpleTimer.h"      // https://github.com/infomaniac50/SimpleTimer
+#include "ESP8266WiFi.h"      // https://github.com/esp8266/Arduino
+#include "WiFiClientSecure.h" // https://github.com/esp8266/Arduino
+#include "Base64.h"           // https://github.com/adamvr/arduino-base64
 
 #include "keys.h"             // this file contains your usernames and passwords, etc
 
-double openForTooLongInMins = 10;
+double openForTooLongInMins = 0.3;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
 bool messageSentInThisOpening = false;
@@ -48,6 +48,8 @@ void loop() {
 }
 
 void checkOpen() {
+  printWifiConnectionStatus();
+  
   if( digitalRead(inputPinForDoor) == doorOpen ) {
     Serial.println("ncInputPinForDoor is HIGH");
     Serial.println("door is open");
@@ -80,6 +82,7 @@ void resetDoorOpenCounter() {
 
 void sendSms(String message) {
   Serial.println("making POST request to Twilio for sending sms..");
+  printWifiConnectionStatus();
 
   WiFiClientSecure httpsClient;
   const char* twilioApiHost = "api.twilio.com";
@@ -125,6 +128,14 @@ String urlEncode(String input){
   input.replace("+","%2B");
   input.replace(" ","%20");
   return input;
+}
+
+void printWifiConnectionStatus() {
+  if (WiFi.status() == WL_CONNECTED){
+    Serial.print("wifi IS connected.\r\n");
+  } else {
+    Serial.print("wifi IS NOT connected!\r\n");
+  }
 }
 
 
