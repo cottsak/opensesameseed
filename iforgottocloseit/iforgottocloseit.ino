@@ -16,66 +16,15 @@ const int inputPinForDoor = 2;
 
 SimpleTimer timer;
 
-void setup() {
-  Serial.begin(115200);   // for debugging
-
-  Serial.print("Connecting to wifi");
-  WiFi.begin(wifiCreds[0], wifiCreds[1]);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\r\nWiFi connected.");
-  Serial.println("access point:");
-  Serial.println(WiFi.SSID());
-  Serial.println("ip address:");
-  Serial.println(WiFi.localIP());
-
-  Serial.println("\r\nReady for interwebs action!\r\n");
-
-  // using GPIO2 for input. door is normally closed.
-  // can not be active LOW on reset or weird stuff happens
-  // needs to be open/HIGH
-  // and then closed/LOW -after- startup
-  pinMode(inputPinForDoor, INPUT_PULLUP);
-  
-  // check to see if the door has been left open for too long every 10s
-  timer.setInterval(5000, checkOpen);
-}
-
-void loop() {
-  timer.run();
-}
-
-void checkOpen() {
-  if( digitalRead(inputPinForDoor) == doorOpen ) {
-    Serial.println("ncInputPinForDoor is HIGH");
-    Serial.println("door is open");
-    doorOpenDurationInSeconds += 5;
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);
-  }
-  if( digitalRead(inputPinForDoor) == doorClosed ) {
-    Serial.println("ncInputPinForDoor is LOW");
-    Serial.println("door is closed.");
-    resetDoorOpenCounter();
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);   
-  }  
-
-  if( messageSentInThisOpening == false && 
-    doorOpenDurationInSeconds > openForTooLongInMins * 60 ) {
-    String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
-    sendSms(messageToSend);
-    // todo: this does not know if it sent successfully. needs work
-    Serial.println("Sent SMS: " + messageToSend);
-    messageSentInThisOpening = true;
-  }
-}
-
 void resetDoorOpenCounter() {
   doorOpenDurationInSeconds = 0;
   messageSentInThisOpening = false; 
+}
+
+String urlEncode(String input){
+  input.replace("+","%2B");
+  input.replace(" ","%20");
+  return input;
 }
 
 void sendSms(String message) {
@@ -121,10 +70,61 @@ void sendSms(String message) {
   Serial.println("closing connection");  
 }
 
-String urlEncode(String input){
-  input.replace("+","%2B");
-  input.replace(" ","%20");
-  return input;
+void checkOpen() {
+  if( digitalRead(inputPinForDoor) == doorOpen ) {
+    Serial.println("ncInputPinForDoor is HIGH");
+    Serial.println("door is open");
+    doorOpenDurationInSeconds += 5;
+    Serial.println("doorOpenDurationInSeconds:");
+    Serial.println(doorOpenDurationInSeconds);
+  }
+  if( digitalRead(inputPinForDoor) == doorClosed ) {
+    Serial.println("ncInputPinForDoor is LOW");
+    Serial.println("door is closed.");
+    resetDoorOpenCounter();
+    Serial.println("doorOpenDurationInSeconds:");
+    Serial.println(doorOpenDurationInSeconds);   
+  }  
+
+  if( messageSentInThisOpening == false && 
+    doorOpenDurationInSeconds > openForTooLongInMins * 60 ) {
+    String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
+    sendSms(messageToSend);
+    // todo: this does not know if it sent successfully. needs work
+    Serial.println("Sent SMS: " + messageToSend);
+    messageSentInThisOpening = true;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);   // for debugging
+
+  Serial.print("Connecting to wifi");
+  WiFi.begin(wifiCreds[0], wifiCreds[1]);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\r\nWiFi connected.");
+  Serial.println("access point:");
+  Serial.println(WiFi.SSID());
+  Serial.println("ip address:");
+  Serial.println(WiFi.localIP());
+
+  Serial.println("\r\nReady for interwebs action!\r\n");
+
+  // using GPIO2 for input. door is normally closed.
+  // can not be active LOW on reset or weird stuff happens
+  // needs to be open/HIGH
+  // and then closed/LOW -after- startup
+  pinMode(inputPinForDoor, INPUT_PULLUP);
+  
+  // check to see if the door has been left open for too long every 10s
+  timer.setInterval(5000, checkOpen);
+}
+
+void loop() {
+  timer.run();
 }
 
 
