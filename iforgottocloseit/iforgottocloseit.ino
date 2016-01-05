@@ -32,7 +32,7 @@ void sendSms(String message) {
 
   WiFiClientSecure httpsClient;
   const char* twilioApiHost = "api.twilio.com";
-  const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
+  const char* twilioApiHostCertSha1 = "79 E7 4F C0 02 71 C8 11 4A 30 7C 14 DA 09 AE 66 AB BB 50 17";
 
   // base64 encode the creds for the http auth header
   int inputLen = sizeof(twilioCreds);
