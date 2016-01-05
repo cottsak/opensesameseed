@@ -1,11 +1,11 @@
 #include <SimpleTimer.h>      // https://github.com/infomaniac50/SimpleTimer
 #include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
-#include <Base64.h>           // https://github.com/adamvr/arduino-base64
+#include <Base64.h>           // https://github.com/cottsak/arduino-base64
 
 #include "keys.h"             // this file contains your usernames and passwords, etc
 
-double openForTooLongInMins = 10;
+double openForTooLongInMins = 0.3;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
 bool messageSentInThisOpening = false;
