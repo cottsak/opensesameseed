@@ -1,7 +1,7 @@
 #include <SimpleTimer.h>      // https://github.com/infomaniac50/SimpleTimer
 #include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
 #include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
-#include <Base64.h>           // https://github.com/cottsak/arduino-base64
+//#include <Base64.h>           // https://github.com/cottsak/arduino-base64
 
 #include "keys.h"             // this file contains your usernames and passwords, etc
 
@@ -32,15 +32,16 @@ void sendSms(String message) {
 
   WiFiClientSecure httpsClient;
   const char* twilioApiHost = "api.twilio.com";
-  const char* twilioApiHostCertSha1 = "79 E7 4F C0 02 71 C8 11 4A 30 7C 14 DA 09 AE 66 AB BB 50 17";
+  int twilioApiPort = 8443;
+  const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
 
   // base64 encode the creds for the http auth header
-  int inputLen = sizeof(twilioCreds);
-  int encodedLen = base64_enc_len(inputLen);
-  char encodedCreds[encodedLen]; 
-  base64_encode(encodedCreds, twilioCreds, inputLen); 
+  //int inputLen = sizeof(twilioCreds);
+  //int encodedLen = base64_enc_len(inputLen);
+  //char encodedCreds[encodedLen]; 
+  //base64_encode(encodedCreds, twilioCreds, inputLen); 
   
-  if (!httpsClient.connect(twilioApiHost, 443)) {
+  if (!httpsClient.connect(twilioApiHost, twilioApiPort)) {
     Serial.println("connection failed.");
     return;
   }
@@ -53,12 +54,14 @@ void sendSms(String message) {
   String request = String("POST ") + "/2010-04-01/Accounts/" + twilioSid + "/Messages.json" + " HTTP/1.1\r\n" +
     "Host: " + twilioApiHost + "\r\n" +
     "User-Agent: ESP8266\r\n" +
-    "Authorization: Basic " + encodedCreds + " \r\n" +
+    //"Authorization: Basic " + encodedCreds + " \r\n" +
+    "Authorization: Basic " + "QUM0MmUwNTAzY2E0NjEzNzE2M2FiNzA2NDczM2NlNTg5ZTphZjJiNzFiNWM2Zjc4M2I1MDhhNWRjMTc3NTJjYTlkMw==" + " \r\n" +    
     "Content-Type: application/x-www-form-urlencoded\r\n" +
     "Content-Length: " + postData.length() + "\r\n" +
     "Connection: close\r\n\r\n" +
     postData;
   httpsClient.print(request);
+  //httpsClient.setAuthorization(
   Serial.println("request sent:");
   Serial.println(request);
 
