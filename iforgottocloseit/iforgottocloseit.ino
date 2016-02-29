@@ -52,12 +52,14 @@ void sendSms(String message) {
 
 void checkOpen() {
   if( digitalRead(inputPinForDoor) == doorOpen ) {
-    DEBUG_MSG("door is open.\r\n");
+    DEBUG_MSG("door is open.\r\n"); 
+    digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH); delay(500); digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH);
     doorOpenDurationInSeconds += 5;
     DEBUG_MSG(("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
   }
   if( digitalRead(inputPinForDoor) == doorClosed ) {
     DEBUG_MSG("door is closed.\r\n");
+        digitalWrite(1, LOW); delay(100); digitalWrite(1, HIGH); delay(100); digitalWrite(1, LOW); delay(100); digitalWrite(1, HIGH);
     resetDoorOpenCounter();
     DEBUG_MSG(String("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
   }  
@@ -76,16 +78,17 @@ void setup() {
 #ifdef DEBUG_ESP_PORT  
   Serial.begin(115200);   // debug
 #else   
-  pinMode(1, OUTPUT);
+  pinMode(1, OUTPUT);   // this will turn it on
+  digitalWrite(1, HIGH) // so turn it off initially; GPIO1 is reverse, thus HIGH is OFF
 #endif
 
   DEBUG_MSG("\r\n\r\n\r\nConnecting to wifi\r\n");
   WiFi.begin(wifiCreds[0], wifiCreds[1]);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    DEBUG_MSG(".");
+    DEBUG_MSG("."); digitalWrite(1, LOW); delay(50); digitalWrite(1, HIGH);
   }
-  DEBUG_MSG("\r\nWiFi connected.\r\n");
+  DEBUG_MSG("\r\nWiFi connected.\r\n");   digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH);
   DEBUG_MSG(("access point: " + WiFi.SSID() + "\r\n").c_str());
   DEBUG_MSG("ip address: "); DEBUG_MSG(WiFi.localIP().toString().c_str()); DEBUG_MSG("\r\n");
 
