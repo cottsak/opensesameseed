@@ -4,7 +4,13 @@
 
 #include "keys.h"             // this file contains your usernames and passwords, etc
 
-double openForTooLongInMins = 5;
+#ifdef DEBUG_ESP_PORT
+#define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+#else
+#define DEBUG_MSG(...) 
+#endif
+
+double openForTooLongInMins = 0.23;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
 bool messageSentInThisOpening = false;
@@ -21,7 +27,7 @@ void resetDoorOpenCounter() {
 }
 
 void sendSms(String message) {
-  Serial.println("making POST request to ifttt for sending sms..");
+  DEBUG_MSG("making POST request to ifttt for sending sms..\n");
 
   HTTPClient http;
 
@@ -30,15 +36,15 @@ void sendSms(String message) {
   http.addHeader("content-type", "application/json");
   int result = http.POST("{\"value1\":\"" + message + "\"}");
 
-  Serial.println("status code: " + String(result));
+  DEBUG_MSG(String("status code: " + result).c_str());
 
   if(result > 0) {
-    Serial.println("body:");
-    Serial.println(http.getString());
+    DEBUG_MSG("body:\r\n");
+    DEBUG_MSG((http.getString() + "\r\n").c_str());
   } else{
-    Serial.print("FAILED. error:"); Serial.println(http.errorToString(result).c_str());
-    Serial.println("body:");
-    Serial.println(http.getString());
+    DEBUG_MSG("FAILED. error:"); DEBUG_MSG((http.errorToString(result) + "\n").c_str());
+    DEBUG_MSG("body:\r\n");
+    DEBUG_MSG((http.getString() + "\r\n").c_str());
   }
 
   http.end();  
@@ -46,18 +52,14 @@ void sendSms(String message) {
 
 void checkOpen() {
   if( digitalRead(inputPinForDoor) == doorOpen ) {
-    Serial.println("ncInputPinForDoor is HIGH");
-    Serial.println("door is open");
+    DEBUG_MSG("door is open.\r\n");
     doorOpenDurationInSeconds += 5;
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);
+    DEBUG_MSG(("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
   }
   if( digitalRead(inputPinForDoor) == doorClosed ) {
-    Serial.println("ncInputPinForDoor is LOW");
-    Serial.println("door is closed.");
+    DEBUG_MSG("door is closed.\r\n");
     resetDoorOpenCounter();
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);   
+    DEBUG_MSG(String("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
   }  
 
   if( messageSentInThisOpening == false && 
@@ -65,27 +67,29 @@ void checkOpen() {
     String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
     sendSms(messageToSend);
     // todo: this does not know if it sent successfully. needs work
-    Serial.println("Sent SMS: " + messageToSend);
+    DEBUG_MSG(String("Sent SMS: " + messageToSend + "\r\n").c_str());
     messageSentInThisOpening = true;
   }
 }
 
 void setup() {
-  Serial.begin(115200);   // for debugging
+#ifdef DEBUG_ESP_PORT  
+  Serial.begin(115200);   // debug
+#else   
+  pinMode(1, OUTPUT);
+#endif
 
-  Serial.print("Connecting to wifi");
+  DEBUG_MSG("\r\n\r\n\r\nConnecting to wifi\r\n");
   WiFi.begin(wifiCreds[0], wifiCreds[1]);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    DEBUG_MSG(".");
   }
-  Serial.println("\r\nWiFi connected.");
-  Serial.println("access point:");
-  Serial.println(WiFi.SSID());
-  Serial.println("ip address:");
-  Serial.println(WiFi.localIP());
+  DEBUG_MSG("\r\nWiFi connected.\r\n");
+  DEBUG_MSG(("access point: " + WiFi.SSID() + "\r\n").c_str());
+  DEBUG_MSG("ip address: "); DEBUG_MSG(WiFi.localIP().toString().c_str()); DEBUG_MSG("\r\n");
 
-  Serial.println("\r\nReady for interwebs action!\r\n");
+  DEBUG_MSG("\r\nReady for interwebs action!\r\n");
 
   // using GPIO2 for input. door is normally closed.
   // can not be active LOW on reset or weird stuff happens
