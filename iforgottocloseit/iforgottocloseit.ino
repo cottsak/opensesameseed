@@ -10,7 +10,7 @@
 #define DEBUG_MSG(...) 
 #endif
 
-double openForTooLongInMins = 0.23;
+double openForTooLongInMins = 5;
 int doorOpenedAtTimeInMills = 0;
 int doorOpenDurationInSeconds = 0;
 bool messageSentInThisOpening = false;
