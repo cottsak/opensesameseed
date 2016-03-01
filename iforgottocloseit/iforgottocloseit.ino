@@ -1,9 +1,14 @@
 #include <SimpleTimer.h>      // https://github.com/infomaniac50/SimpleTimer
 #include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
-#include <WiFiClientSecure.h> // https://github.com/esp8266/Arduino
-#include <Base64.h>           // https://github.com/adamvr/arduino-base64
+#include <ESP8266HTTPClient.h>
 
 #include "keys.h"             // this file contains your usernames and passwords, etc
+
+#ifdef DEBUG_ESP_PORT
+#define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+#else
+#define DEBUG_MSG(...) 
+#endif
 
 double openForTooLongInMins = 10;
 int doorOpenedAtTimeInMills = 0;
@@ -16,22 +21,78 @@ const int inputPinForDoor = 2;
 
 SimpleTimer timer;
 
-void setup() {
-  Serial.begin(115200);   // for debugging
+void resetDoorOpenCounter() {
+  doorOpenDurationInSeconds = 0;
+  messageSentInThisOpening = false; 
+}
 
-  Serial.print("Connecting to wifi");
+void sendSms(String message) {
+  DEBUG_MSG("making POST request to ifttt for sending sms..\n");
+
+  HTTPClient http;
+
+  http.begin(iftttMakerUrl, "A9 81 E1 35 B3 7F 81 B9 87 9D 11 DD 48 55 43 2C 8F C3 EC 87");
+
+  http.addHeader("content-type", "application/json");
+  int result = http.POST("{\"value1\":\"" + message + "\"}");
+
+  DEBUG_MSG(String("status code: " + result).c_str());
+
+  if(result > 0) {
+    DEBUG_MSG("body:\r\n");
+    DEBUG_MSG((http.getString() + "\r\n").c_str());
+  } else{
+    DEBUG_MSG("FAILED. error:"); DEBUG_MSG((http.errorToString(result) + "\n").c_str());
+    DEBUG_MSG("body:\r\n");
+    DEBUG_MSG((http.getString() + "\r\n").c_str());
+  }
+
+  http.end();  
+}
+
+void checkOpen() {
+  if( digitalRead(inputPinForDoor) == doorOpen ) {
+    DEBUG_MSG("door is open.\r\n"); 
+    digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH); delay(500); digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH);
+    doorOpenDurationInSeconds += 5;
+    DEBUG_MSG(("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
+  }
+  if( digitalRead(inputPinForDoor) == doorClosed ) {
+    DEBUG_MSG("door is closed.\r\n");
+        digitalWrite(1, LOW); delay(100); digitalWrite(1, HIGH); delay(100); digitalWrite(1, LOW); delay(100); digitalWrite(1, HIGH);
+    resetDoorOpenCounter();
+    DEBUG_MSG(String("doorOpenDurationInSeconds:" + (String)doorOpenDurationInSeconds + "\r\n").c_str());
+  }  
+
+  if( messageSentInThisOpening == false && 
+    doorOpenDurationInSeconds > openForTooLongInMins * 60 ) {
+    String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
+    sendSms(messageToSend);
+    // todo: this does not know if it sent successfully. needs work
+    DEBUG_MSG(String("Sent SMS: " + messageToSend + "\r\n").c_str());
+    messageSentInThisOpening = true;
+  }
+}
+
+void setup() {
+#ifdef DEBUG_ESP_PORT  
+  Serial.begin(115200);   // debug
+#else   
+  pinMode(1, OUTPUT);   // this will turn it on
+  digitalWrite(1, HIGH) // so turn it off initially; GPIO1 is reverse, thus HIGH is OFF
+#endif
+
+  DEBUG_MSG("\r\n\r\n\r\nConnecting to wifi\r\n");
   WiFi.begin(wifiCreds[0], wifiCreds[1]);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    DEBUG_MSG("."); digitalWrite(1, LOW); delay(50); digitalWrite(1, HIGH);
   }
-  Serial.println("\r\nWiFi connected.");
-  Serial.println("access point:");
-  Serial.println(WiFi.SSID());
-  Serial.println("ip address:");
-  Serial.println(WiFi.localIP());
+  DEBUG_MSG("\r\nWiFi connected.\r\n");   digitalWrite(1, LOW); delay(1000); digitalWrite(1, HIGH);
+  DEBUG_MSG(("access point: " + WiFi.SSID() + "\r\n").c_str());
+  DEBUG_MSG("ip address: "); DEBUG_MSG(WiFi.localIP().toString().c_str()); DEBUG_MSG("\r\n");
 
-  Serial.println("\r\nReady for interwebs action!\r\n");
+  DEBUG_MSG("\r\nReady for interwebs action!\r\n");
 
   // using GPIO2 for input. door is normally closed.
   // can not be active LOW on reset or weird stuff happens
@@ -47,84 +108,5 @@ void loop() {
   timer.run();
 }
 
-void checkOpen() {
-  if( digitalRead(inputPinForDoor) == doorOpen ) {
-    Serial.println("ncInputPinForDoor is HIGH");
-    Serial.println("door is open");
-    doorOpenDurationInSeconds += 5;
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);
-  }
-  if( digitalRead(inputPinForDoor) == doorClosed ) {
-    Serial.println("ncInputPinForDoor is LOW");
-    Serial.println("door is closed.");
-    resetDoorOpenCounter();
-    Serial.println("doorOpenDurationInSeconds:");
-    Serial.println(doorOpenDurationInSeconds);   
-  }  
-
-  if( messageSentInThisOpening == false && 
-    doorOpenDurationInSeconds > openForTooLongInMins * 60 ) {
-    String messageToSend = (String)"WARNING: your garage door has been open for more than " + openForTooLongInMins + " mins!";
-    sendSms(messageToSend);
-    // todo: this does not know if it sent successfully. needs work
-    Serial.println("Sent SMS: " + messageToSend);
-    messageSentInThisOpening = true;
-  }
-}
-
-void resetDoorOpenCounter() {
-  doorOpenDurationInSeconds = 0;
-  messageSentInThisOpening = false; 
-}
-
-void sendSms(String message) {
-  Serial.println("making POST request to Twilio for sending sms..");
-
-  WiFiClientSecure httpsClient;
-  const char* twilioApiHost = "api.twilio.com";
-  const char* twilioApiHostCertSha1 = "B2 CC A2 09 87 C2 4E EB F7 C1 F4 14 0F 49 BE C0 91 EB 50 4F";
-
-  // base64 encode the creds for the http auth header
-  int inputLen = sizeof(twilioCreds);
-  int encodedLen = base64_enc_len(inputLen);
-  char encodedCreds[encodedLen]; 
-  base64_encode(encodedCreds, twilioCreds, inputLen); 
-  
-  if (!httpsClient.connect(twilioApiHost, 443)) {
-    Serial.println("connection failed.");
-    return;
-  }
-  if (!httpsClient.verify(twilioApiHostCertSha1, twilioApiHost)) {
-    Serial.println("certificate doesn't match. will not send message.");
-    return;
-  }
-
-  String postData = urlEncode("To=" + smsToNumber + "&From=" + smsFromNumber + "&Body=" + message);
-  String request = String("POST ") + "/2010-04-01/Accounts/" + twilioSid + "/Messages.json" + " HTTP/1.1\r\n" +
-    "Host: " + twilioApiHost + "\r\n" +
-    "User-Agent: ESP8266\r\n" +
-    "Authorization: Basic " + encodedCreds + " \r\n" +
-    "Content-Type: application/x-www-form-urlencoded\r\n" +
-    "Content-Length: " + postData.length() + "\r\n" +
-    "Connection: close\r\n\r\n" +
-    postData;
-  httpsClient.print(request);
-  Serial.println("request sent:");
-  Serial.println(request);
-
-  String responseString = httpsClient.readString();
-  Serial.println("reply was:");
-  Serial.println("==========");
-  Serial.println(responseString);
-  Serial.println("==========");
-  Serial.println("closing connection");  
-}
-
-String urlEncode(String input){
-  input.replace("+","%2B");
-  input.replace(" ","%20");
-  return input;
-}
 
 
